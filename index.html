@@ -5,108 +5,349 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agregar Prenda</title>
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       padding: 20px;
+      background-color: #f5f5f5;
     }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .main-container {
+      display: flex;
+      height: calc(100vh - 100px);
+      gap: 20px;
+    }
+    
+    .form-container {
+      flex: 0 0 350px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .palette-container {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      height: 100%;
+      overflow-y: auto;
+    }
+    
+    .color-group {
+      margin-bottom: 15px;
+    }
+    
+    .group-title {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #333;
+      font-weight: bold;
+      background: #f0f0f0;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+    
+    .tonos-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
     .color-box {
       width: 30px;
       height: 30px;
-      border: 1px solid #ccc;
-      display: inline-block;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       cursor: pointer;
-      margin: 5px;
+      transition: all 0.2s;
     }
+    
+    .color-box:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    
     .color-selected {
       outline: 3px solid #000;
+      transform: scale(1.1);
     }
+    
     label {
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+      color: #555;
     }
+    
     input, select {
-      padding: 8px;
-      margin-top: 5px;
       width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
     }
+    
     button {
-      padding: 10px 15px;
+      width: 100%;
+      padding: 12px;
       background-color: #4CAF50;
       color: white;
       border: none;
+      border-radius: 4px;
+      font-size: 16px;
       cursor: pointer;
-      margin-top: 15px;
+      transition: background-color 0.3s;
+      margin-top: 10px;
     }
+    
     button:hover {
       background-color: #45a049;
+    }
+    
+    #color_hex {
+      background-color: #f9f9f9;
+      font-weight: bold;
+    }
+    
+    /* Estilos para la imagen */
+    .image-preview {
+      margin: 15px 0;
+      text-align: center;
+    }
+    
+    #previewCanvas {
+      max-width: 100%;
+      max-height: 200px;
+      border: 1px solid #ddd;
+      display: none;
+    }
+    
+    #imagenPrenda {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    
+    /* Ajustes para pantallas pequeñas */
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .form-container, .palette-container {
+        flex: none;
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Registrar Nueva Prenda</h1>
-  <form id="formPrenda">
-    <label>Nombre de Prenda:
-      <input type="text" id="nombre_prenda" required>
-    </label>
+  
+  <div class="main-container">
+    <div class="form-container">
+      <form id="formPrenda">
+        <label>Nombre de Prenda:
+          <input type="text" id="nombre_prenda" required>
+        </label>
 
-    <label>Tipo de Prenda:
-      <select id="tipoprenda" required>
-        <option value="" disabled selected>Seleccione un tipo</option>
-      </select>
-    </label>
+        <label>Tipo de Prenda:
+          <select id="tipoprenda" required>
+            <option value="" disabled selected>Seleccione un tipo</option>
+          </select>
+        </label>
 
-    <label>Color:
-      <input type="text" id="color_hex" readonly>
-    </label>
-    <div id="color_palette"></div>
-
-    <button type="submit">Guardar Prenda</button>
-  </form>
+        <label>Color seleccionado:
+          <input type="text" id="color_hex" readonly>
+        </label>
+        
+        <label>Imagen de Prenda:
+          <input type="file" id="imagenPrenda" accept="image/*">
+        </label>
+        
+        <div class="image-preview">
+          <canvas id="previewCanvas"></canvas>
+        </div>
+        
+        <button type="button" id="aplicarColor">Aplicar Color a Imagen</button>
+        <button type="submit">Guardar Prenda</button>
+      </form>
+    </div>
+    
+    <div class="palette-container">
+      <h2>Paleta de Colores</h2>
+      <div id="color_palette"></div>
+    </div>
+  </div>
 
   <script>
     const API_URL = 'http://localhost:3000';
 
-    const colores = {
-      '#000000': 'Negro',
-      '#2F4F4F': 'Gris Pizarra Oscuro',
-      '#8B0000': 'Rojo Oscuro',
-      '#228B22': 'Verde Bosque',
-      '#556B2F': 'Verde Oliva Oscuro',
-      '#800080': 'Púrpura',
-      '#663399': 'Rebeca Púrpura',
-      '#A9A9A9': 'Gris Oscuro',
-      '#5F9EA0': 'Azul Cadete',
-      '#FF1493': 'Rosa Intenso',
-      '#FFA500': 'Naranja',
-      '#FFB6C1': 'Rosa Claro',
-      '#FFFF00': 'Amarillo',
-      '#FF8C00': 'Naranja Oscuro',
-      '#F0F8FF': 'Azul Alice',
-      '#FAFAD2': 'Amarillo Pálido',
-      '#9370DB': 'Púrpura Medio',
-      '#FF69B4': 'Rosa Caliente'
-    };
+    // Variables para manejo de imagen
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    let imagenOriginal = null;
+    const inputImagen = document.getElementById('imagenPrenda');
+    const btnAplicarColor = document.getElementById('aplicarColor');
 
-    // Generar paleta de colores
+    // Configuración de paleta de colores
     const paletteDiv = document.getElementById('color_palette');
     const inputColor = document.getElementById('color_hex');
     let selectedBox = null;
 
-    for (const hex in colores) {
-      const box = document.createElement('div');
-      box.className = 'color-box';
-      box.style.backgroundColor = hex;
-      box.title = colores[hex];
-      box.addEventListener('click', () => {
-        inputColor.value = hex;
-        if (selectedBox) selectedBox.classList.remove('color-selected');
-        box.classList.add('color-selected');
-        selectedBox = box;
-      });
-      paletteDiv.appendChild(box);
-    }
+    // Definición de colores agrupados optimizada
+    const coloresAgrupados = [
+      {
+        grupo: 'Rojos/Rosados',
+        tonos: {
+          '#8B0000': 'Rojo Oscuro', '#CD5C5C': 'Rojo Indio',
+          '#FF4500': 'Rojo Naranja', '#FF1493': 'Rosa Profundo',
+          '#FF69B4': 'Rosa Fuerte', '#FFC0CB': 'Rosa'
+        }
+      },
+      {
+        grupo: 'Naranjas/Amarillos',
+        tonos: {
+          '#FF8C00': 'Naranja Oscuro', '#FFA500': 'Naranja',
+          '#FFFF00': 'Amarillo', '#FAFAD2': 'Dorado Claro'
+        }
+      },
+      {
+        grupo: 'Verdes',
+        tonos: {
+          '#006400': 'Verde Oscuro', '#228B22': 'Verde Bosque',
+          '#556B2F': 'Oliva Oscuro', '#8FBC8F': 'Verde Mar'
+        }
+      },
+      {
+        grupo: 'Azules/Morados',
+        tonos: {
+          '#0000FF': 'Azul', '#5F9EA0': 'Azul Cadete',
+          '#800080': 'Púrpura', '#9370DB': 'Púrpura Medio'
+        }
+      },
+      {
+        grupo: 'Neutros',
+        tonos: {
+          '#000000': 'Negro', '#A9A9A9': 'Gris Oscuro',
+          '#FFFFFF': 'Blanco', '#F0F0F0': 'Gris Claro'
+        }
+      }
+    ];
+
+    // Generar la paleta agrupada
+    coloresAgrupados.forEach(grupo => {
+      const grupoDiv = document.createElement('div');
+      grupoDiv.className = 'color-group';
+      
+      const titulo = document.createElement('h3');
+      titulo.className = 'group-title';
+      titulo.textContent = grupo.grupo;
+      grupoDiv.appendChild(titulo);
+      
+      const tonosContainer = document.createElement('div');
+      tonosContainer.className = 'tonos-container';
+      
+      for (const hex in grupo.tonos) {
+        const box = document.createElement('div');
+        box.className = 'color-box';
+        box.style.backgroundColor = hex;
+        box.title = `${grupo.tonos[hex]} (${hex})`;
+        
+        box.addEventListener('click', () => {
+          inputColor.value = hex;
+          if (selectedBox) selectedBox.classList.remove('color-selected');
+          box.classList.add('color-selected');
+          selectedBox = box;
+        });
+        
+        tonosContainer.appendChild(box);
+      }
+      
+      grupoDiv.appendChild(tonosContainer);
+      paletteDiv.appendChild(grupoDiv);
+    });
+
+    // Cargar imagen y mostrarla en canvas
+    inputImagen.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          // Configurar canvas
+          canvas.style.display = 'block';
+          const maxWidth = 350;
+          const scaleFactor = maxWidth / img.width;
+          canvas.width = img.width > maxWidth ? maxWidth : img.width;
+          canvas.height = img.height * scaleFactor;
+          
+          // Dibujar imagen original
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          imagenOriginal = img;
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Aplicar color seleccionado a la imagen
+    btnAplicarColor.addEventListener('click', function() {
+      if (!imagenOriginal || !inputColor.value) {
+        alert('Por favor selecciona una imagen y un color primero');
+        return;
+      }
+      
+      const colorHex = inputColor.value;
+      
+      // Redibujar imagen original
+      ctx.drawImage(imagenOriginal, 0, 0, canvas.width, canvas.height);
+      
+      // Obtener datos de imagen
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Convertir HEX a RGB
+      const r = parseInt(colorHex.substr(1, 2), 16);
+      const g = parseInt(colorHex.substr(3, 2), 16);
+      const b = parseInt(colorHex.substr(5, 2), 16);
+      
+      // Aplicar efecto de tinte (50% de intensidad)
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i+3] > 0) { // Solo píxeles no transparentes
+          data[i] = Math.floor((data[i] + r) / 2);   // R
+          data[i+1] = Math.floor((data[i+1] + g) / 2); // G
+          data[i+2] = Math.floor((data[i+2] + b) / 2); // B
+        }
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+    });
 
     // Cargar tipos de prenda desde la API
     async function cargarTiposPrenda() {
@@ -118,7 +359,6 @@
         const tipos = await response.json();
         const select = document.getElementById('tipoprenda');
         
-        // Agregar opciones de tipos de prenda
         tipos.forEach(tipo => {
           const option = document.createElement('option');
           option.value = tipo.tipoprenda_id;
@@ -133,39 +373,47 @@
 
     // Enviar el formulario
     document.getElementById('formPrenda').addEventListener('submit', async e => {
-  e.preventDefault();
-  
-  try {
-    const prenda = {
-      id_usuario: 1, // DEBES OBTENER ESTE VALOR DE TU SISTEMA DE AUTENTICACIÓN
-      nombre_prenda: document.getElementById('nombre_prenda').value,
-      color_hex: document.getElementById('color_hex').value,
-      tipo_prenda: document.getElementById('tipoprenda').value // Cambiado a tipo_prenda
-    };
+      e.preventDefault();
+      
+      try {
+        // Convertir canvas a imagen base64
+        let imagenBase64 = null;
+        if (canvas.style.display !== 'none') {
+          imagenBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        }
 
-    console.log('Enviando:', prenda); // Para depuración
+        const prenda = {
+          id_usuario: 1,
+          nombre_prenda: document.getElementById('nombre_prenda').value,
+          color_hex: document.getElementById('color_hex').value,
+          tipo_prenda: document.getElementById('tipoprenda').value,
+          imagen: imagenBase64
+        };
 
-    const response = await fetch(`${API_URL}/prendas`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(prenda)
+        console.log('Enviando:', prenda);
+
+        const response = await fetch(`${API_URL}/prendas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(prenda)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Error al guardar');
+        }
+
+        alert('Prenda guardada correctamente');
+        document.getElementById('formPrenda').reset();
+        canvas.style.display = 'none';
+        if (selectedBox) selectedBox.classList.remove('color-selected');
+        
+      } catch (err) {
+        console.error('Error:', err);
+        alert(err.message || 'Error al conectar con el servidor');
+      }
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Error al guardar');
-    }
-
-    alert('Prenda guardada correctamente');
-    document.getElementById('formPrenda').reset();
-    if (selectedBox) selectedBox.classList.remove('color-selected');
-    
-  } catch (err) {
-    console.error('Error:', err);
-    alert(err.message || 'Error al conectar con el servidor');
-  }
-});
 
     // Inicializar
     cargarTiposPrenda();

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agregar Prenda</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .color-box {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #ccc;
+      display: inline-block;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .color-selected {
+      outline: 3px solid #000;
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    input, select {
+      padding: 8px;
+      margin-top: 5px;
+      width: 100%;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Registrar Nueva Prenda</h1>
+  <form id="formPrenda">
+    <label>Nombre de Prenda:
+      <input type="text" id="nombre_prenda" required>
+    </label>
+
+    <label>Tipo de Prenda:
+      <select id="tipoprenda" required>
+        <option value="" disabled selected>Seleccione un tipo</option>
+      </select>
+    </label>
+
+    <label>Color:
+      <input type="text" id="color_hex" readonly>
+    </label>
+    <div id="color_palette"></div>
+
+    <button type="submit">Guardar Prenda</button>
+  </form>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+
+    const colores = {
+      '#000000': 'Negro',
+      '#2F4F4F': 'Gris Pizarra Oscuro',
+      '#8B0000': 'Rojo Oscuro',
+      '#228B22': 'Verde Bosque',
+      '#556B2F': 'Verde Oliva Oscuro',
+      '#800080': 'Púrpura',
+      '#663399': 'Rebeca Púrpura',
+      '#A9A9A9': 'Gris Oscuro',
+      '#5F9EA0': 'Azul Cadete',
+      '#FF1493': 'Rosa Intenso',
+      '#FFA500': 'Naranja',
+      '#FFB6C1': 'Rosa Claro',
+      '#FFFF00': 'Amarillo',
+      '#FF8C00': 'Naranja Oscuro',
+      '#F0F8FF': 'Azul Alice',
+      '#FAFAD2': 'Amarillo Pálido',
+      '#9370DB': 'Púrpura Medio',
+      '#FF69B4': 'Rosa Caliente'
+    };
+
+    // Generar paleta de colores
+    const paletteDiv = document.getElementById('color_palette');
+    const inputColor = document.getElementById('color_hex');
+    let selectedBox = null;
+
+    for (const hex in colores) {
+      const box = document.createElement('div');
+      box.className = 'color-box';
+      box.style.backgroundColor = hex;
+      box.title = colores[hex];
+      box.addEventListener('click', () => {
+        inputColor.value = hex;
+        if (selectedBox) selectedBox.classList.remove('color-selected');
+        box.classList.add('color-selected');
+        selectedBox = box;
+      });
+      paletteDiv.appendChild(box);
+    }
+
+    // Cargar tipos de prenda desde la API
+    async function cargarTiposPrenda() {
+      try {
+        const response = await fetch(`${API_URL}/tipoprenda`);
+        if (!response.ok) {
+          throw new Error('Error al cargar tipos de prenda');
+        }
+        const tipos = await response.json();
+        const select = document.getElementById('tipoprenda');
+        
+        // Agregar opciones de tipos de prenda
+        tipos.forEach(tipo => {
+          const option = document.createElement('option');
+          option.value = tipo.tipoprenda_id;
+          option.textContent = tipo.tipo;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        alert('No se pudieron cargar los tipos de prenda');
+      }
+    }
+
+    // Enviar el formulario
+    document.getElementById('formPrenda').addEventListener('submit', async e => {
+  e.preventDefault();
+  
+  try {
+    const prenda = {
+      id_usuario: 1, // DEBES OBTENER ESTE VALOR DE TU SISTEMA DE AUTENTICACIÓN
+      nombre_prenda: document.getElementById('nombre_prenda').value,
+      color_hex: document.getElementById('color_hex').value,
+      tipo_prenda: document.getElementById('tipoprenda').value // Cambiado a tipo_prenda
+    };
+
+    console.log('Enviando:', prenda); // Para depuración
+
+    const response = await fetch(`${API_URL}/prendas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prenda)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al guardar');
+    }
+
+    alert('Prenda guardada correctamente');
+    document.getElementById('formPrenda').reset();
+    if (selectedBox) selectedBox.classList.remove('color-selected');
+    
+  } catch (err) {
+    console.error('Error:', err);
+    alert(err.message || 'Error al conectar con el servidor');
+  }
+});
+
+    // Inicializar
+    cargarTiposPrenda();
+  </script>
+</body>
+</html>

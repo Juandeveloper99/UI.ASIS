@@ -162,6 +162,16 @@
   </style>
 </head>
 <body>
+
+   
+</div>
+
+<a href="combinaciones.html" style="text-decoration: none;">
+  <button style="width: 100%; margin-top: 20px; background-color: #2196F3;">
+    Ver combinaciones
+  </button>
+</a>
+
   <h1>Registrar Nueva Prenda</h1>
   
   <div class="main-container">
@@ -198,6 +208,8 @@
     </div>
   </div>
 
+  
+
   <script>
     const API_URL = 'http://localhost:3000';
 
@@ -218,7 +230,7 @@
         nombre: "Camiseta"
       },
       3: { // Pantalones (nuevo diseño combinado)
-        path: "M7 3h10l-1 7h-2l1 11h-3l-1.5-7L10 21H7l1-11H6L7 3z M12 10v2",
+        path: "M7 4h10v16h-3l-2-6-2 6H7V4z",
         nombre: "Pantalón"
       },
       4: { // Zapatos (nuevo diseño combinado)
@@ -322,16 +334,32 @@
     });
 
     // Función para actualizar el icono de la prenda
-    function actualizarIconoPrenda() {
-      const tipoPrenda = document.getElementById('tipoprenda').value;
-      const color = inputColor.value || '#cccccc';
-      
-      if (tipoPrenda && iconosPrendas[tipoPrenda]) {
-        prendaIcon.innerHTML = `<path d="${iconosPrendas[tipoPrenda].path}"/>`;
-      }
-      
-      prendaIcon.setAttribute('fill', color);
-    }
+   function actualizarIconoPrenda() {
+  const tipoPrenda = document.getElementById('tipoprenda').value;
+  const color = inputColor.value || '#cccccc';
+
+  if (tipoPrenda && iconosPrendas[tipoPrenda]) {
+    prendaIcon.innerHTML = `
+      <svg class="prenda-icon" xmlns="http://www.w3.org/2000/svg" 
+           viewBox="0 0 24 24" 
+           stroke="black" stroke-width="1.5" 
+           fill="${color}">
+        <path d="${iconosPrendas[tipoPrenda].path}" />
+      </svg>
+    `;
+  } else {
+    // Icono por defecto si no hay selección
+    prendaIcon.innerHTML = `
+      <svg class="prenda-icon" xmlns="http://www.w3.org/2000/svg" 
+           viewBox="0 0 24 24" 
+           stroke="black" stroke-width="1.5" 
+           fill="${color}">
+        <path d="M16 21H8a1 1 0 0 1-1-1v-5H5v-2h2V8a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v5h2v2h-2v5a1 1 0 0 1-1 1zm-4-9v4h2v-4h-2zm0-6h-2a1 1 0 0 0-1 1v5h4V8a1 1 0 0 0-1-1z"/>
+      </svg>
+    `;
+  }
+}
+
 
     // Cargar tipos de prenda desde la API
     async function cargarTiposPrenda() {
@@ -399,5 +427,7 @@
     // Inicializar
     cargarTiposPrenda();
   </script>
+
+  
 </body>
 </html>

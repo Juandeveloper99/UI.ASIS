@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prendas y Combinaciones</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      text-align: center;
+      background: #333;
+      color: white;
+      padding: 10px;
+      margin: 0;
+    }
+
+    .container {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+    .columna-izquierda {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      border-right: 2px solid #ccc;
+    }
+
+    .columna-derecha {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .prenda, .combinacion {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .icono {
+      width: 40px;
+      height: 40px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .info {
+      font-size: 12px;
+    }
+
+    .prenda-combo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    svg {
+      margin-right: 5px;
+    }
+
+    .estilo {
+      font-weight: bold;
+      text-align: center;
+      margin-top: 5px;
+      padding: 4px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .formal { background: #006400; color: white; }
+    .casual { background: #FFA500; color: white; }
+    .mixto { background: #4682B4; color: white; }
+
+    .heart-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      color: #ccc;
+      transition: color 0.3s;
+    }
+
+    .heart-btn:hover {
+      color: #ff6b6b;
+    }
+
+    .heart-btn.active {
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Prendas y Combinaciones</h1>
+  <div class="container">
+    <div class="columna-izquierda">
+      <h2>Prendas</h2>
+      <div id="lista-prendas" class="grid"></div>
+    </div>
+
+    <div class="columna-derecha">
+      <h2>Combinaciones</h2>
+      <div id="contenedor-combos" class="grid"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/prendas';
+    const FAVORITOS_URL = 'http://localhost:3000/outfit_fav';
+
+    const iconosPrendas = {
+      1: { path: "M7 4l5 3 5-3 M7 4l-3 3 2 3v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10l2-3-3-3 M12 7v12 M10 12h4", nombre: "Camisa" },
+      2: { path: "M8 5h8 M8 5l-4 3v4l3 1v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-6l3-1V8l-4-3 M9 5a3 3 0 0 0 6 0", nombre: "Camiseta" },
+      3: { path: "M7 4h10v16h-3l-2-6-2 6H7V4z", nombre: "Pantalón" },
+      4: { path: "M3 16c2 .5 5-1 7-3 1.2 1.8 3.9 3 6 3h3a2 2 0 0 1 2 2v1H2v-2a1 1 0 0 1 1-1z M10 13l-2-2 1-1 2 2 M14 16v-2", nombre: "Zapatos" }
+    };
+
+    function clasificarEstilo(color1, color2, color3) {
+      const formales = ['#8B0000','#006400','#228B22','#556B2F','#0000FF','#800080','#000000','#4B4B4B','#A9A9A9','#FFFFFF','#D3D3D3','#F5F5F5'];
+      const casuales = ['#CD5C5C','#FF4500','#FF1493','#FF69B4','#FFC0CB','#FF8C00','#FFA500','#FFD700','#FFFF00','#FAFAD2','#FFFACD','#8FBC8F','#00FF7F','#ADFF2F','#5F9EA0','#1E90FF','#9370DB','#8A2BE2'];
+
+      let conteoFormales = 0, conteoCasuales = 0;
+      [color1, color2, color3].map(c => c.toUpperCase()).forEach(c => {
+        if (formales.includes(c)) conteoFormales++;
+        else if (casuales.includes(c)) conteoCasuales++;
+      });
+
+      if (conteoFormales === 3) return "Formal";
+      else if (conteoCasuales === 3) return "Casual";
+      else return "Mixto";
+    }
+
+    function crearSVG(path, color) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="${color}" stroke="black" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="${path}" />
+              </svg>`;
+    }
+
+    function agregarFavorito(combinacion) {
+      // Datos a enviar al servidor
+      const datos = {
+        id_usuario: 1, // Puedes cambiar esto según tu sistema de usuarios
+        prendas: [
+          { tipo: combinacion.tipoCamisa, color: combinacion.colorCamisa },
+          { tipo: combinacion.tipoPantalon, color: combinacion.colorPantalon },
+          { tipo: combinacion.tipoZapatos, color: combinacion.colorZapatos }
+        ],
+        fecha: new Date().toISOString()
+      };
+
+      fetch(FAVORITOS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datos)
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw err; });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Éxito:', data);
+        alert('Combinación guardada en favoritos');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        alert('Error al guardar: ' + (error.mensaje || error.message || 'Error desconocido'));
+      });
+    }
+
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        const listaPrendas = document.getElementById('lista-prendas');
+        const contenedorCombos = document.getElementById('contenedor-combos');
+
+        // Mostrar prendas
+        data.forEach(prenda => {
+          const icono = iconosPrendas[prenda.tipo_prenda];
+          const prendaDiv = document.createElement('div');
+          prendaDiv.classList.add('prenda');
+          prendaDiv.innerHTML = `
+            <svg class="icono" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="black" fill="${prenda.color_hex}" stroke-width="1.5">
+              <path d="${icono.path}" />
+            </svg>
+            <div class="info">
+              <strong>${prenda.nombre_prenda} (${icono.nombre})</strong><br>
+              Usuario: ${prenda.id_usuario}<br>
+              ID: ${prenda.id_prenda}<br>
+              Fecha: ${new Date(prenda.fecha_registro).toLocaleDateString()}
+            </div>
+          `;
+          listaPrendas.appendChild(prendaDiv);
+        });
+
+        // Generar combinaciones
+        let camisas = data.filter(p => p.tipo_prenda === 1 || p.tipo_prenda === 2);
+        let pantalones = data.filter(p => p.tipo_prenda === 3);
+        let zapatos = data.filter(p => p.tipo_prenda === 4);
+
+        camisas.forEach(c => {
+          pantalones.forEach(p => {
+            zapatos.forEach(z => {
+              let estilo = clasificarEstilo(c.color_hex, p.color_hex, z.color_hex);
+              let div = document.createElement('div');
+              div.classList.add('combinacion');
+              
+              div.innerHTML = `
+                <button class="heart-btn" title="Guardar combinación">❤</button>
+                <div class="prenda-combo">${crearSVG(iconosPrendas[c.tipo_prenda].path, c.color_hex)} ${c.nombre_prenda}</div>
+                <div class="prenda-combo">${crearSVG(iconosPrendas[p.tipo_prenda].path, p.color_hex)} ${p.nombre_prenda}</div>
+                <div class="prenda-combo">${crearSVG(iconosPrendas[z.tipo_prenda].path, z.color_hex)} ${z.nombre_prenda}</div>
+                <div class="estilo ${estilo.toLowerCase()}">${estilo}</div>
+              `;
+              
+              const heartBtn = div.querySelector('.heart-btn');
+              heartBtn.addEventListener('click', function() {
+                this.classList.toggle('active');
+                
+                const combinacionData = {
+                  tipoCamisa: c.tipo_prenda,
+                  colorCamisa: c.color_hex,
+                  tipoPantalon: p.tipo_prenda,
+                  colorPantalon: p.color_hex,
+                  tipoZapatos: z.tipo_prenda,
+                  colorZapatos: z.color_hex
+                };
+                
+                agregarFavorito(combinacionData);
+              });
+              
+              contenedorCombos.appendChild(div);
+            });
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Error al cargar prendas:', error);
+        alert('Error al cargar las prendas: ' + error.message);
+      });
+  </script>
+</body>
+</html>
